@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitTracker - برنامه تناسب اندام</title>
+    <style>
+        /* Reset و فونت‌ها */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        body.dark-mode {
+            background-color: #121212;
+            color: #f5f5f5;
+        }
+        
+        /* هدر */
+        header {
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(90deg, #4b6cb7, #182848);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            animation: fadeIn 1s ease-in-out;
+        }
+        
+        .toggle-container {
+            display: flex;
+            align-items: center;
+        }
+        
+        .toggle-text {
+            margin-left: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        /* سوئیچ دارک مود */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #4b6cb7;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+        
+        /* محتوای اصلی */
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+            animation: slideUp 0.5s ease-out;
+            position: relative;
+        }
+        
+        .dark-mode .card {
+            background: #1e1e1e;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card h2 {
+            margin-bottom: 1rem;
+            color: #4b6cb7;
+        }
+        
+        .dark-mode .card h2 {
+            color: #6c8ae4;
+        }
+        
+        /* پیشرفت آب */
+        .water-progress {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 1rem 0;
+            position: relative;
+        }
+        
+        .dark-mode .water-progress {
+            background: #333;
+        }
+        
+        .water-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            border-radius: 15px;
+            transition: width 1s ease-in-out;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .water-fill::after {
+            content: "";
+            position: absolute;
+            top: -10px;
+            left: 0;
+            right: 0;
+            bottom: -10px;
+            background: linear-gradient(transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: waterShine 2s infinite linear;
+        }
+        
+        /* انیمیشن‌ها */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes waterShine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* دکمه‌ها */
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(90deg, #4b6cb7, #182848);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: inline-block;
+            margin-top: 0.5rem;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .dark-mode .btn {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* فرم افزودن هدف جدید */
+        .add-goal-form {
+            display: none;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dark-mode .add-goal-form {
+            background: #1e1e1e;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        
+        .dark-mode .form-group input {
+            background: #333;
+            color: #f5f5f5;
+            border-color: #444;
+        }
+        
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+        
+        /* دکمه حذف */
+        .delete-btn {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: #ff4757;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        
+        .delete-btn:hover {
+            opacity: 1;
+        }
+        
+        /* دکمه افزودن هدف جدید */
+        .add-goal-btn {
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+        
+        /* پیشرفت عددی */
+        .progress-text {
+            text-align: center;
+            margin: 0.5rem 0;
+            font-size: 1.1rem;
+        }
+        
+        /* ورودی به‌روزرسانی پیشرفت */
+        .update-input {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .update-input input {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        
+        .dark-mode .update-input input {
+            background: #333;
+            color: #f5f5f5;
+            border-color: #444;
+        }
+        
+        .update-btn {
+            padding: 0.5rem 1rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">FitTracker</div>
+        <div class="toggle-container">
+            <span class="toggle-text">حالت شب</span>
+            <label class="switch">
+                <input type="checkbox" id="darkModeToggle">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </header>
+    
+    <div class="container">
+        <button id="showAddGoalForm" class="btn add-goal-btn">+ افزودن هدف جدید</button>
+        
+        <div id="addGoalForm" class="add-goal-form">
+            <h2>افزودن هدف جدید</h2>
+            <div class="form-group">
+                <label for="goalName">نام هدف</label>
+                <input type="text" id="goalName" placeholder="مثال: پیاده‌روی روزانه">
+            </div>
+            <div class="form-group">
+                <label for="goalTarget">هدف کلی (عدد)</label>
+                <input type="number" id="goalTarget" placeholder="مثال: 10000 (برای گام‌ها)">
+            </div>
+            <div class="form-group">
+                <label for="goalUnit">واحد اندازه‌گیری</label>
+                <input type="text" id="goalUnit" placeholder="مثال: قدم، لیتر، دقیقه">
+            </div>
+            <div class="form-actions">
+                <button id="cancelAddGoal" class="btn" style="background: #ff4757;">انصراف</button>
+                <button id="saveGoal" class="btn">ذخیره هدف</button>
+            </div>
+        </div>
+        
+        <div id="goalsContainer">
+            <!-- اهداف به صورت دینامیک اینجا اضافه می‌شوند -->
+        </div>
+    </div>
+    
+    <script>
+        // دارک مود
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const body = document.body;
+        
+        // بررسی وضعیت ذخیره شده
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            body.classList.add('dark-mode');
+            darkModeToggle.checked = true;
+        }
+        
+        // تغییر حالت
+        darkModeToggle.addEventListener('change', () => {
+            if (darkModeToggle.checked) {
+                body.classList.add('dark-mode');
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                body.classList.remove('dark-mode');
+                localStorage.setItem('darkMode', 'disabled');
+            }
+        });
+        
+        // مدیریت اهداف
+        let goals = JSON.parse(localStorage.getItem('fitnessGoals')) || [
+            { id: 1, name: 'پیشرفت امروز', current: 8542, target: 10000, unit: 'گام' },
+            { id: 2, name: 'نوشیدن آب', current: 2.5, target: 3, unit: 'لیتر' },
+            { id: 3, name: 'تمرینات ورزشی', current: 30, target: 45, unit: 'دقیقه' }
+        ];
+        
+        const goalsContainer = document.getElementById('goalsContainer');
+        const showAddGoalFormBtn = document.getElementById('showAddGoalForm');
+        const addGoalForm = document.getElementById('addGoalForm');
+        const cancelAddGoalBtn = document.getElementById('cancelAddGoal');
+        const saveGoalBtn = document.getElementById('saveGoal');
+        
+        // نمایش فرم افزودن هدف
+        showAddGoalFormBtn.addEventListener('click', () => {
+            addGoalForm.style.display = 'block';
+            showAddGoalFormBtn.style.display = 'none';
+        });
+        
+        // مخفی کردن فرم
+        cancelAddGoalBtn.addEventListener('click', () => {
+            addGoalForm.style.display = 'none';
+            showAddGoalFormBtn.style.display = 'block';
+            clearForm();
+        });
+        
+        // پاک کردن فرم
+        function clearForm() {
+            document.getElementById('goalName').value = '';
+            document.getElementById('goalTarget').value = '';
+            document.getElementById('goalUnit').value = '';
+        }
+        
+        // ذخیره هدف جدید
+        saveGoalBtn.addEventListener('click', () => {
+            const name = document.getElementById('goalName').value.trim();
+            const target = parseFloat(document.getElementById('goalTarget').value);
+            const unit = document.getElementById('goalUnit').value.trim();
+            
+            if (!name || isNaN(target) || !unit) {
+                alert('لطفاً تمام فیلدها را پر کنید');
+                return;
+            }
+            
+            const newGoal = {
+                id: Date.now(),
+                name,
+                current: 0,
+                target,
+                unit
+            };
+            
+            goals.push(newGoal);
+            saveGoals();
+            renderGoals();
+            
+            addGoalForm.style.display = 'none';
+            showAddGoalFormBtn.style.display = 'block';
+            clearForm();
+        });
+        
+        // ذخیره اهداف در localStorage
+        function saveGoals() {
+            localStorage.setItem('fitnessGoals', JSON.stringify(goals));
+        }
+        
+        // نمایش اهداف
+        function renderGoals() {
+            goalsContainer.innerHTML = '';
+            
+            if (goals.length === 0) {
+                goalsContainer.innerHTML = '<div class="card"><p>هنوز هدفی اضافه نکرده‌اید. یک هدف جدید اضافه کنید!</p></div>';
+                return;
+            }
+            
+            goals.forEach(goal => {
+                const percentage = Math.min(Math.round((goal.current / goal.target) * 100), 100);
+                
+                const goalCard = document.createElement('div');
+                goalCard.className = 'card';
+                goalCard.innerHTML = `
+                    <button class="delete-btn" data-id="${goal.id}">×</button>
+                    <h2>${goal.name}</h2>
+                    <p class="progress-text">${goal.current} از ${goal.target} ${goal.unit}</p>
+                    <div class="water-progress">
+                        <div class="water-fill" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="update-input">
+                        <input type="number" id="update-${goal.id}" placeholder="مقدار جدید">
+                        <button class="btn update-btn" data-id="${goal.id}">به‌روزرسانی</button>
+                    </div>
+                `;
+                
+                goalsContainer.appendChild(goalCard);
+                
+                // انیمیشن پر شدن نوار پیشرفت
+                const waterFill = goalCard.querySelector('.water-fill');
+                setTimeout(() => {
+                    waterFill.style.width = `${percentage}%`;
+                }, 100);
+            });
+            
+            // اضافه کردن ایونت‌های حذف
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = parseInt(e.target.getAttribute('data-id'));
+                    deleteGoal(id);
+                });
+            });
+            
+            // اضافه کردن ایونت‌های به‌روزرسانی
+            document.querySelectorAll('.update-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = parseInt(e.target.getAttribute('data-id'));
+                    const input = document.getElementById(`update-${id}`);
+                    const value = parseFloat(input.value);
+                    
+                    if (!isNaN(value)) {
+                        updateGoal(id, value);
+                        input.value = '';
+                    } else {
+                        alert('لطفاً یک عدد معتبر وارد کنید');
+                    }
+                });
+            });
+        }
+        
+        // حذف هدف
+        function deleteGoal(id) {
+            if (confirm('آیا مطمئن هستید که می‌خواهید این هدف را حذف کنید؟')) {
+                goals = goals.filter(goal => goal.id !== id);
+                saveGoals();
+                renderGoals();
+            }
+        }
+        
+        // به‌روزرسانی هدف
+        function updateGoal(id, newValue) {
+            goals = goals.map(goal => {
+                if (goal.id === id) {
+                    return { ...goal, current: newValue };
+                }
+                return goal;
+            });
+            
+            saveGoals();
+            renderGoals();
+        }
+        
+        // بارگذاری اولیه اهداف
+        renderGoals();
+    </script>
+</body>
+</html>
